@@ -4,7 +4,7 @@ use cosmic::{
         Core, Settings, Task,
     },
     iced::{Alignment, Length, Pixels},
-    widget, // Row, Column, slider, Container, etc.
+    widget, 
     Application,
 };
 
@@ -21,19 +21,17 @@ use bindings::{
     DDCA_Display_Handle,
     DDCA_Display_Ref,
 
-    // If your bindgen or a local struct includes something like:
-    //   pub struct DDCA_Non_Table_Vcp_Value { pub current_value: u16, pub maximum_value: u16 }
+
     DDCA_Non_Table_Vcp_Value,
 };
-
-/// Your user-level messages.
+//Messages within our App.
 #[derive(Clone, Debug)]
 enum UserMessage {
     BrightnessChanged(usize, u8),
     BrightnessSetDone(usize, Result<(), String>),
 }
 
-type AppMsg = CosmicMessage<UserMessage>;
+type AppMsg = CosmicMessage<UserMessage>; //I named CosmicMessage so that we avoid confusion within the AppModel structure.
 
 /// Info for each monitor: store a `DDCA_Display_Ref` and a `brightness` value read at startup.
 #[derive(Clone)]
@@ -47,9 +45,7 @@ struct AppModel {
     monitors: Vec<Monitor>,
 }
 
-// ===================
-// Implementation
-// ===================
+// APP MODEL
 impl Application for AppModel {
     type Executor = cosmic::executor::Default;
     type Flags = ();
@@ -65,7 +61,7 @@ impl Application for AppModel {
     }
 
     fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
-        // 1) Initialize the library and enumerate the displays once.
+
         unsafe {
             let rc_init = ddca_init(std::ptr::null(), 2, 0);
             if rc_init != 0 {
@@ -73,7 +69,7 @@ impl Application for AppModel {
             }
         }
 
-        // 2) Grab references
+ 
         let mut monitors = Vec::new();
         unsafe {
             let mut drefs_ptr: *mut DDCA_Display_Ref = std::ptr::null_mut();
@@ -131,18 +127,21 @@ impl Application for AppModel {
             }
             // Handle None messages
             CosmicMessage::None => Task::none(),
-            // Handle DbusActivation if feature is enabled
+            // Handle DbusActivation if feature is enabled (This bit was added by GPT when we were fighting compile errors, not clear if needed)
             #[cfg(feature = "single-instance")]
             Message::DbusActivation(_) => Task::none(),
         }
     }
 
     fn view(&self) -> cosmic::Element<Self::Message> {
-        let mut row_of_sliders = widget::Row::new().spacing(20).align_y(Alignment::Center);
-
+        let mut column_of_sliders = widget::Row::new()
+            .spacing(20)
+            .align_y(Alignment::Center)
+  ;
+    
         for (i, mon) in self.monitors.iter().enumerate() {
-            // Single wrap
-            let slider = widget::slider(
+            // Create a vertical slider
+            let vertical_slider = widget::vertical_slider(
                 0..=100,
                 mon.brightness,
                 move |val| {
@@ -150,26 +149,30 @@ impl Application for AppModel {
                 },
             )
             .step(1)
-            .height(Pixels::from(200));
-
-            let label = widget::text::body(format!("Monitor {i} (Current={})", mon.brightness));
-
+            .height(Pixels::from(200))
+            .width(Pixels::from(30)); // Adjust width for vertical slider
+    
+            let label = widget::text::body(format!("Monitor {i} (Current={})", mon.brightness))
+                .width(Length::Fill)
+                .align_y(Alignment::Center);
+    
             let col = widget::Column::new()
-                .push(slider)
+                .push(vertical_slider)
                 .push(label)
                 .align_x(Alignment::Center)
                 .spacing(10);
-
-            row_of_sliders = row_of_sliders.push(col);
+    
+            column_of_sliders = column_of_sliders.push(col);
         }
-
-        widget::Container::new(row_of_sliders)
+    
+        widget::Container::new(column_of_sliders)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Shrink)
             .center_y(Length::Shrink)
             .into()
     }
+    
 }
 
 fn main() -> cosmic::iced::Result {
