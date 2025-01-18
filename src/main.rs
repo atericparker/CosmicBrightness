@@ -134,7 +134,7 @@ impl Application for AppModel {
     }
 
     fn view(&self) -> cosmic::Element<Self::Message> {
-        let mut column_of_sliders = widget::Row::new()
+        let mut row_of_sliders = widget::Row::new()
             .spacing(20)
             .align_y(Alignment::Center)
   ;
@@ -162,10 +162,10 @@ impl Application for AppModel {
                 .align_x(Alignment::Center)
                 .spacing(10);
     
-            column_of_sliders = column_of_sliders.push(col);
+                row_of_sliders = row_of_sliders.push(col);
         }
     
-        widget::Container::new(column_of_sliders)
+        widget::Container::new(row_of_sliders)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Shrink)
@@ -243,4 +243,8 @@ async fn set_brightness_ddcutil(
     })
     .await
     .map_err(|join_err| format!("Tokio join error: {join_err}"))?
+}
+async fn set_brightness_global(value: u8, monitors: Vec<Monitor>) {
+    //function to set all monitors at once. 
+    //TODO
 }
